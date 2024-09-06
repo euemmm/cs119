@@ -23,8 +23,17 @@ class BasicMoverJames:
         raise NotImplementedError
         
     def move_forward(self, target_dist):
-        """Moves the robot forward by `target_dist`."""
-        raise NotImplementedError
+        rate = rospy.Rate(20)
+
+        point = Point()
+
+        point.x = target_dist
+
+        while not rospy.is_shutdown():
+            self.cmd_vel_pub.publish(point)
+            rate.sleep()
+
+        # raise NotImplementedError
 
     def out_and_back(self, target_dist):
         """
@@ -71,7 +80,8 @@ class BasicMoverJames:
 
 if __name__ == '__main__':
     rospy.init_node('basic_mover')
-    BasicMoverJames().run()
+    BasicMoverJames().move_forward(1)
+    # BasicMoverJames().run()
     # BasicMoverJames().out_and_back(1)
     # BasicMoverJames().draw_square(1)
     # BasicMoverJames().move_in_a_circle(1)
