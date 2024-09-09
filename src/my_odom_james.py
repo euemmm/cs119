@@ -15,18 +15,23 @@ class MyOdomJames:
     def __init__(self):
         self.odom_sub = rospy.Subscriber("odom", Odometry, self.odom_cb)
         self.my_odom_pub = rospy.Publisher("my_odom", Point, queue_size=1)
-        self.old_pose = None
-        self.dist = 0.0
-        self.turn = 0.0
+        # self.old_pose = None
+        # self.dist = 0.0
+        # self.turn = 0.0
         print("My odom started")
 
     def odom_cb(self, msg):
         """Callback function for `odom_sub`."""
-        self.cur_pose = msg.pose.pose
-        self.update_dist(self.cur_pose.position)
-        self.update_turn(self.cur_pose.orientation)
-        self.publish_data()
-        self.old_pose = self.cur_pose
+
+        print("----------")
+        print(msg)
+        print("----------")
+
+        data = Point()
+        data.x = msg.pose.pose.position.x
+        data.y = msg.pose.pose.position.y
+        data.z = data.z + 1/100 * msg.twist.twist.angular.z #radian turn from facing x
+        self.my_odom_pub.publish(data)
 
     def update_dist(self, position):
         """
@@ -34,6 +39,7 @@ class MyOdomJames:
         Updates `self.dist` to the distance between `self.old_pose` and
         `cur_pose`.
         """
+
         pass
     
     def update_turn(self, cur_orientation):
@@ -61,6 +67,19 @@ class MyOdomJames:
 
 
 if __name__ == "__main__":
+
     rospy.init_node("my_odom")
-    MyOdomJames()
-    rospy.spin()
+    
+    rate = rospy.Rate(1)
+    
+    # MyOdomJames()
+    
+    # rate.sleep()
+    
+    # rospy.spin()
+
+    while not rospy.is_shutdown():
+
+        MyOdomJames()
+
+        rate.sleep()
