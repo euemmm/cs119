@@ -19,15 +19,6 @@ class BasicMoverJames:
         self.cur_point.x = 0
         self.cur_point.y = 0
         self.cur_point.z = 0
-
-    # def my_odom_cb(self, msg):
-    #     print("-----")
-    #     print(msg)
-    #     print("-----")
-
-    #     self.cur_point.x = msg.x
-    #     self.cur_point.y = msg.y
-    #     self.cur_point.z = msg.z
         
     def odom_cb(self, msg):
         """Callback function for `odom_sub`."""
@@ -58,9 +49,9 @@ class BasicMoverJames:
 
         self.turn_to_heading(target_yaw * math.pi / 180)
 
-    def turn_to_heading(self, target_yaw):
+    def turn_to_heading(self, target_yaw): #target_yaw is rad
         
-        sleep(0.1)
+        sleep(0.1) #wait for odom input
 
         twist = Twist()
 
@@ -74,10 +65,6 @@ class BasicMoverJames:
         
         target_yaw = target_yaw * 180 / math.pi
 
-        if target_yaw == 0 :
-
-            target_yaw = 360
-
         while target_yaw < 0 :
 
             target_yaw = 360 + target_yaw
@@ -86,27 +73,46 @@ class BasicMoverJames:
 
             target_yaw = target_yaw - 360
 
-        print(target_yaw)
-
-        while target_yaw - self.cur_point.z > 0 :
-
-            if target_yaw - self.cur_point.z < 10 : #Decelerate when target angle is less than 10 left
-
-                twist.angular.z = 0.05
-
-            else :
-
-                twist.angular.z = 0.2
-
+        if target_yaw == 0 or target_yaw == 360:
+            
+            twist.angular.z = 0.2
             self.cmd_vel_pub.publish(twist)
 
-        # while target_yaw - self.cur_point.z < 0 : TODO TODO TODO
+            while 360 - self.cur_point.z > 10:
+                twist.angular.z = 0.1
+                self.cmd_vel_pub.publish(twist)
+
+            while 360 - self.cur_point.z > 0.5:
+                twist.angular.z = 0.05
+                self.cmd_vel_pub.publish(twist)
+
+            twist.angular.z = 0.05
+            self.cmd_vel_pub.publish(twist)
+            return
+
+        if target_yaw > self.cur_point.z :
+
+            while target_yaw - self.cur_point.z > 0:
+
+                if target_yaw - self.cur_point.z < 10 : #Decelerate when target angle is less than 10 left
+
+                    twist.angular.z = 0.05
+
+                else :
+
+                    twist.angular.z = 0.2
+
+                self.cmd_vel_pub.publish(twist)
+
+        elif target_yaw < self.cur_point.z :
+
+            self.turn_to_heading_deg(0)
+
+            self.turn_to_heading_deg(target_yaw)
 
         twist.angular.z = 0
         self.cmd_vel_pub.publish(twist)
-
-
-        
+     
     def move_forward(self, target_dist):
         
         sleep(0.1)
@@ -137,19 +143,20 @@ class BasicMoverJames:
         self.cmd_vel_pub.publish(twist)
 
     def out_and_back(self, target_dist):
-        """
-        This function:
-        1. moves the robot forward by `target_dist`;
-        2. turns the robot by 180 degrees; and
-        3. moves the robot forward by `target_dist`.
-        """
-        raise NotImplementedError
+        self.move_forward(target_dist)
+        if self.cur_point.z + 180 > 360:
+            self.turn_to_heading_deg(self.cur_point.z + 180 - 360)
+        else :
+            self.turn_to_heading_deg(self.cur_point.z + 180)
+        self.move_forward(target_dist)
 
     def draw_square(self, side_length):
-        """
-        This function moves the robot in a square with `side_length` meter sides.
-        """ 
-        raise NotImplementedError
+        for _ in range(0,4) :
+            self.move_forward(side_length)
+            if self.cur_point.z + 90 > 360 :
+                self.turn_to_heading_deg(self.cur_point.z + 90 - 360)
+            else :
+                self.turn_to_heading_deg(self.cur_point.z + 90)
 
     def move_in_a_circle(self, r):
 
@@ -184,14 +191,11 @@ class BasicMoverJames:
             self.cmd_vel_pub.publish(twist)
             rate.sleep()
 
-    
-            
-
 if __name__ == '__main__':
     rospy.init_node('basic_mover')
     # BasicMoverJames().move_forward(2)
-    BasicMoverJames().turn_to_heading_deg(45)
+    # BasicMoverJames().turn_to_heading_deg(180)
     # BasicMoverJames().out_and_back(1)
-    # BasicMoverJames().draw_square(1)
+    BasicMoverJames().draw_square(1)
     # BasicMoverJames().move_in_a_circle(1)
     # BasicMoverJames().rotate_in_place()
